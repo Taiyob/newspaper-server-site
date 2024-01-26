@@ -7,7 +7,7 @@ const port = process.env.PORT || 5000;
 
 const app = express();
 const corsOptions = {
-  origin: "http://localhost:5173", // Update with the actual origin of your frontend
+  origin: ["http://localhost:5173", "https://newspaper-688b0.web.app"],
   credentials: true,
 };
 app.use(cors(corsOptions));
@@ -15,7 +15,6 @@ app.use(express.json());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.9bycbcd.mongodb.net/?retryWrites=true&w=majority`;
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -26,10 +25,13 @@ const client = new MongoClient(uri, {
 
 async function run() {
   try {
-    await client.connect();
-
     const usersCollection = client.db("newspaper").collection("users"); // user table
+    const slidersCollection = client.db("newspaper").collection("sliders"); // slider table
+    const publishersCollection = client
+      .db("newspaper")
+      .collection("publishers"); // publishers table
 
+    // Token Generate:
     app.post("/jwt", async (req, res) => {
       try {
         const user = req.body;
@@ -46,10 +48,13 @@ async function run() {
           .send({ success: true });
       } catch (error) {
         console.error("Error in /jwt endpoint:", error);
-        res.status(500).send({ success: false, error: "Internal Server Error" });
+        res
+          .status(500)
+          .send({ success: false, error: "Internal Server Error" });
       }
-    });    
+    });
 
+    // User create and update
     app.put("/user/:email", async (req, res) => {
       const body = req.body;
       const email = req.params.email;
@@ -72,10 +77,31 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
-    console.log(
-      "Pinged your deployment. You successfully connected to MongoDB!"
-    );
+    // Slider content showing:
+    app.get("/slider-data", async (req, res) => {
+      const result = await slidersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Slider content generate:
+    app.post("/slider-data-generate", async (req, res) => {
+      const body = req.body;
+      const result = await slidersCollection.insertOne(body);
+      res.send(result);
+    });
+
+    // Publisher showing:
+    app.get("/show-publisher", async (req, res) => {
+      const result = await publishersCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Publisher generate:
+    app.post("/add-publisher", async (req, res) => {
+      const body = req.body;
+      const result = await publishersCollection.insertOne(body);
+      res.send(result);
+    });
   } finally {
     // Ensures that the client will close when you finish/error
     //await client.close();
