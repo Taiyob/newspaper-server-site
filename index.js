@@ -1,6 +1,6 @@
 const express = require("express");
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const jwt = require("jsonwebtoken");
 const port = process.env.PORT || 5000;
@@ -30,6 +30,7 @@ async function run() {
     const publishersCollection = client
       .db("newspaper")
       .collection("publishers"); // publishers table
+    const articlesCollection = client.db("newspaper").collection("articles"); // publishers table
 
     // Token Generate:
     app.post("/jwt", async (req, res) => {
@@ -100,6 +101,40 @@ async function run() {
     app.post("/add-publisher", async (req, res) => {
       const body = req.body;
       const result = await publishersCollection.insertOne(body);
+      res.send(result);
+    });
+
+    // Article get:
+    app.get("/show-article", async (req, res) => {
+      const result = await articlesCollection.find().toArray();
+      res.send(result);
+    });
+
+    // Single article get:
+    app.get("/show-article/:id", async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) };
+      const result = await articlesCollection.findOne(query);
+      res.send(result);
+    });
+
+    // Article add:
+    app.post("/add-article", async (req, res) => {
+      const body = req.body;
+      const result = await articlesCollection.insertOne(body);
+      res.send(result);
+    });
+
+    // Artical Approved:
+    app.patch("/admin/article-approve/:id", async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          status: "approved",
+        },
+      };
+      const result = await articlesCollection.updateOne(filter, updatedDoc);
       res.send(result);
     });
   } finally {
