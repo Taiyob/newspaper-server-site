@@ -210,8 +210,7 @@ async function run() {
       res.send(paymentResult);
     });
   } finally {
-    // Ensures that the client will close when you finish/error
-    //await client.close();
+    
   }
 }
 run().catch(console.dir);
@@ -224,4 +223,4 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}`);
 });
 
-//
+
